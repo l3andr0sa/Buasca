@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Cotacao extends Model
 {
-    use HasFactory;
-
-    protected $fillable = ['origem', 'destino', 'preco_km'];
+    protected $fillable = [
+        'origem',
+        'destino',
+        'categoria',
+        'cidade',
+        'distancia',
+        'preco',
+    ];
 }

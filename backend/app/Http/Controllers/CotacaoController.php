@@ -7,79 +7,56 @@ use Illuminate\Http\Request;
 
 class CotacaoController extends Controller
 {
-    /**
-     * Listar todas as cotações
-     */
-    public function index()
-    {
-        return response()->json(Cotacao::all());
-    }
+    private $tarifas = [
+        'MUZAMBINHO' => [
+            'carro_viagem'  => 2.50,
+            'carro_cidade'  => 2.20,
+            'carro_black'   => 3.50,
+            'carro_central' => 2.70,
+            'carro_pet'     => 2.90,
+        ],
+        'ALTEROSA' => [
+            'carro_viagem'  => 2.60,
+            'carro_cidade'  => 2.30,
+            'carro_black'   => 3.60,
+            'carro_central' => 2.80,
+            'carro_pet'     => 3.00,
+        ],
+        // ...adicione as outras cidades
+    ];
 
-    /**
-     * Buscar uma cotação por ID
-     */
-    public function show($id)
-    {
-        $cotacao = Cotacao::find($id);
-
-        if (!$cotacao) {
-            return response()->json(['mensagem' => 'Cotação não encontrada'], 404);
-        }
-
-        return response()->json($cotacao);
-    }
-
-    /**
-     * Criar uma nova cotação
-     */
     public function store(Request $request)
     {
         $data = $request->validate([
-            'origem'   => 'required|string|max:255',
-            'destino'  => 'required|string|max:255',
-            'preco_km' => 'required|numeric|min:0',
+            'origem'    => 'required|string|max:255',
+            'destino'   => 'required|string|max:255',
+            'categoria' => 'required|string',
+            'cidade'    => 'required|string',
+            'distancia' => 'required|numeric',
         ]);
 
-        $cotacao = Cotacao::create($data);
+        $cidade    = strtoupper(trim($data['cidade']));
+        $categoria = strtolower(trim($data['categoria']));
 
-        return response()->json($cotacao, 201);
-    }
-
-    /**
-     * Atualizar uma cotação existente
-     */
-    public function update(Request $request, $id)
-    {
-        $cotacao = Cotacao::find($id);
-
-        if (!$cotacao) {
-            return response()->json(['mensagem' => 'Cotação não encontrada'], 404);
+        $tarifa = $this->tarifas[$cidade][$categoria] ?? null;
+        if (!$tarifa) {
+            return response()->json(['erro' => "Tarifa não cadastrada para $cidade/$categoria"], 400);
         }
 
-        $data = $request->validate([
-            'origem'   => 'sometimes|required|string|max:255',
-            'destino'  => 'sometimes|required|string|max:255',
-            'preco_km' => 'sometimes|required|numeric|min:0',
+        $preco = $tarifa * $data['distancia'];
+
+        $cotacao = Cotacao::create([
+            'origem'    => $data['origem'],
+            'destino'   => $data['destino'],
+            'categoria' => $categoria,
+            'cidade'    => $cidade,
+            'distancia' => $data['distancia'],
+            'preco'     => $preco,
         ]);
 
-        $cotacao->update($data);
-
-        return response()->json($cotacao);
-    }
-
-    /**
-     * Deletar uma cotação
-     */
-    public function destroy($id)
-    {
-        $cotacao = Cotacao::find($id);
-
-        if (!$cotacao) {
-            return response()->json(['mensagem' => 'Cotação não encontrada'], 404);
-        }
-
-        $cotacao->delete();
-
-        return response()->json(['mensagem' => 'Cotação deletada com sucesso!']);
+        return response()->json([
+            'cotacao' => $cotacao,
+            'preco'   => $preco,
+        ], 201);
     }
 }
